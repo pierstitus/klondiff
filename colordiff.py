@@ -95,12 +95,14 @@ class DiffWriter(object):
             key = key.strip()
             val = val.strip()
 
-            tmp = val
-            if val.startswith('dark'):
-                tmp = val[4:]
-
-            if tmp not in terminal.colors:
-                continue
+            if val in ('none', 'normal', 'off'):
+                val = None
+            else:
+                tmp = val
+                if val.startswith('dark'):
+                    tmp = val[4:]
+                if tmp not in terminal.colors:
+                    continue
 
             self.colors[key] = val
 
