@@ -1,5 +1,6 @@
-# Copyright (C) 2006 Aaron Bentley
-# <aaron@aaronbentley.com>
+#!/usr/bin/env python
+# Copyright (C) 2006 Aaron Bentley <aaron@aaronbentley.com>
+# Copyright (C) 2016 Piers Titus van der Torren <pierstitus@gmail.com>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,29 +16,28 @@
 #    along with this program; if not, write to the Free Software
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+# Based on colordiff from bzrtools
+
 import re
 import sys
-from os.path import expanduser
+import os
 
-from bzrlib import patiencediff, trace
-from bzrlib.commands import get_cmd_object
-from bzrlib.patches import (hunk_from_header, InsertLine, RemoveLine,
-                            ContextLine, Hunk, HunkLine)
+from difflib import SequenceMatcher
 
 import terminal
 
 class LineParser(object):
     def parse_line(self, line):
         if line.startswith("@"):
-            return hunk_from_header(line)
+            return "diffstuff"
         elif line.startswith("+"):
-            return InsertLine(line[1:])
+            return "newtext"
         elif line.startswith("-"):
-            return RemoveLine(line[1:])
+            return "oldtext"
         elif line.startswith(" "):
-            return ContextLine(line[1:])
+            return "plain"
         else:
-            return line
+            return "plain"
 
 
 class DiffWriter(object):
@@ -45,21 +45,23 @@ class DiffWriter(object):
     def __init__(self, target, check_style=False, color='always'):
         self.target = target
         self.lp = LineParser()
+        self.oldtext_hold = None
         self.chunks = []
-        from terminal import has_ansi_colors
-        if 'always' == color or ('auto' == color and has_ansi_colors()):
+        if 'always' == color or ('auto' == color and terminal.has_ansi_colors()):
             self.colors = {
                 'metaline':      'darkyellow',
                 'plain':         'darkwhite',
                 'newtext':       'darkblue',
                 'oldtext':       'darkred',
+                'newsame':       'darkyellow',
+                'oldsame':       'darkyellow',
                 'diffstuff':     'darkgreen',
                 'trailingspace': 'yellow',
                 'leadingtabs':   'magenta',
                 'longline':      'cyan',
             }
             self._read_colordiffrc('/etc/colordiffrc')
-            self._read_colordiffrc(expanduser('~/.colordiffrc'))
+            self._read_colordiffrc(os.path.expanduser('~/.colordiffrc'))
         else:
             self.colors = {
                 'metaline':      None,
@@ -106,12 +108,27 @@ class DiffWriter(object):
 
             self.colors[key] = val
 
-    def colorstring(self, type, item, bad_ws_match):
+    def colorstring(self, type, line, check_style=None):
         color = self.colors[type]
         if color is not None:
-            if self.check_style and bad_ws_match:
+            if check_style is None:
+                check_style = self.check_style
+            if check_style:
+                bad_ws_match = re.match(r'^([\t]*)(.*?)([\t ]*)(\r?\n)$',
+                                        line)
+                has_leading_tabs = bool(bad_ws_match.group(1))
+                has_trailing_whitespace = bool(bad_ws_match.group(3))
+                if 'newtext' == type:
+                    if has_leading_tabs:
+                        self.added_leading_tabs += 1
+                    if has_trailing_whitespace:
+                        self.added_trailing_whitespace += 1
+                    if (len(bad_ws_match.group(2)) > self.max_line_len and
+                        not line.startswith('++ ')):
+                        self.long_lines += 1
+
                 #highlight were needed
-                item.contents = ''.join(terminal.colorstring(txt, color, bcol)
+                line = ''.join(terminal.colorstring(txt, color, bcol)
                     for txt, bcol in (
                         (bad_ws_match.group(1).expandtabs(),
                              self.colors['leadingtabs']),
@@ -120,10 +137,10 @@ class DiffWriter(object):
                              self.colors['longline']),
                         (bad_ws_match.group(3), self.colors['trailingspace'])
                     )) + bad_ws_match.group(4)
-            string = terminal.colorstring(str(item), color)
+            string = terminal.colorstring(str(line), color)
         else:
-            string = str(item)
-        self.target.write(string)
+            string = str(line)
+        return string
 
     def write(self, text):
         newstuff = text.split('\n')
@@ -137,41 +154,56 @@ class DiffWriter(object):
             self.write(line)
 
     def _writeline(self, line):
-        item = self.lp.parse_line(line)
-        bad_ws_match = None
-        if isinstance(item, Hunk):
-            line_class = 'diffstuff'
-            self._analyse_old_new()
-        elif isinstance(item, HunkLine):
-            bad_ws_match = re.match(r'^([\t]*)(.*?)([\t ]*)(\r?\n)$',
-                                    item.contents)
-            has_leading_tabs = bool(bad_ws_match.group(1))
-            has_trailing_whitespace = bool(bad_ws_match.group(3))
-            if isinstance(item, InsertLine):
-                if has_leading_tabs:
-                    self.added_leading_tabs += 1
-                if has_trailing_whitespace:
-                    self.added_trailing_whitespace += 1
-                if (len(bad_ws_match.group(2)) > self.max_line_len and
-                    not item.contents.startswith('++ ')):
-                    self.long_lines += 1
-                line_class = 'newtext'
-                self._new_lines.append(item)
-            elif isinstance(item, RemoveLine):
-                line_class = 'oldtext'
-                self._old_lines.append(item)
+        output = []
+        line_type = self.lp.parse_line(line)
+        if None != self.oldtext_hold:
+            if 'newtext' == line_type:
+                output.extend(self.parse_changed_line(self.oldtext_hold, line))
+                self.target.writelines(output)
+                self.oldtext_hold = None
+                return
             else:
-                line_class = 'plain'
-        elif isinstance(item, basestring) and item.startswith('==='):
-            line_class = 'metaline'
-            self._analyse_old_new()
+                output.append(self.colorstring('oldtext', self.oldtext_hold))
+            self.oldtext_hold = None
+        if 'oldtext' == line_type and not line.startswith('---'):
+            self.oldtext_hold = line
         else:
-            line_class = 'plain'
-            self._analyse_old_new()
-        self.colorstring(line_class, item, bad_ws_match)
+            output.append(self.colorstring(line_type, line))
+        self.target.writelines(output)
 
     def flush(self):
         self.target.flush()
+
+    def parse_changed_line(self, oldtext, newtext):
+        def oldsame(s):
+            return self.colorstring('oldsame', s, False)
+        def newsame(s):
+            return self.colorstring('newsame', s, False)
+        def olddel(s):
+            return self.colorstring('oldtext', s, False)
+        def newadd(s):
+            return self.colorstring('newtext', s, False)
+
+        s = SequenceMatcher(None, oldtext[1:], newtext[1:])
+        if s.quick_ratio() > 0.6 and s.ratio() > 0.6:
+            matches = s.get_matching_blocks()
+            matches = [m for m in matches if m[2] == 0 or m[2] >= 3]
+            oldtext = oldtext[1:]
+            newtext = newtext[1:]
+            old = [self.colorstring('oldtext', '-', False)]
+            new = [self.colorstring('newtext', '+', False)]
+            old.append(olddel(oldtext[0:matches[0][0]]))
+            new.append(newadd(newtext[0:matches[0][1]]))
+            for n, m in enumerate(matches[:-1]):
+                old.append(oldsame(oldtext[m[0]:m[0]+m[2]]))
+                new.append(newsame(newtext[m[1]:m[1]+m[2]]))
+                old.append(olddel(oldtext[m[0]+m[2]:matches[n+1][0]]))
+                new.append(newadd(newtext[m[1]+m[2]:matches[n+1][1]]))
+            output = [''.join(old), ''.join(new)]
+        else:
+            output = [self.colorstring('oldtext', oldtext),
+                      self.colorstring('newtext', newtext)]
+        return output
 
     @staticmethod
     def _matched_lines(old, new):
@@ -222,3 +254,12 @@ def colordiff(color, check_style, *args, **kwargs):
         if dw.spurious_whitespace > 0:
             trace.warning('%d line(s) have spurious whitespace changes' %
                           dw.spurious_whitespace)
+
+def main(args):
+    real_stdout = sys.stdout
+    dw = DiffWriter(real_stdout)
+    for line in sys.stdin:
+        dw.write(line)
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
