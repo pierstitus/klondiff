@@ -156,6 +156,9 @@ def main(args):
     (opts, args) = p.parse_args(args)
     matcher = algorithms[opts.matcher]
 
+    print args
+    if len(args) == 7:
+        args = [args[1], args[4]]
     if len(args) != 2:
         print 'You must supply 2 filenames to diff'
         return -1
