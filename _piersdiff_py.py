@@ -264,8 +264,8 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
         if self.nearly_matching_blocks is not None:
             return self.nearly_matching_blocks
 
-        a_ws = [s.strip() for s in self.a]
-        b_ws = [s.strip() for s in self.b]
+        a_ws = [s.strip().replace(' ','').replace('\t','') for s in self.a]
+        b_ws = [s.strip().replace(' ','').replace('\t','') for s in self.b]
         # TODO: more junk stripping?
 
         start_line = 0;
@@ -276,15 +276,20 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
         while a_ws[end_line] == b_ws[end_line]:
             end_line -= 1
 
+        # find LCS of unique lines
         result = unique_lcs_py(a_ws[start_line:end_line], b_ws[start_line:end_line])
 
         result = [(apos + start_line, bpos + start_line) for apos, bpos in result]
 
+        # grow unique matches with surrounding lines
         matches = []
         if start_line:
             matches.append((0, 0, start_line))
-        last_a = start_line
+        last_a = last_b = start_line
         for apos, bpos in result:
+            # if previous match overlaps current just skip it. 
+            # Only a is checked because lines are unique anyway
+            # TODO: check if <= is correct, print((apos-last_a,bpos-last_b))
             if apos <= last_a:
                 continue
             start = -1
@@ -294,8 +299,16 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
             end = 1
             while a_ws[apos + end] == b_ws[bpos + end]:
                 end += 1
+
+            # search for additional matches which might not have been found due to not unique lines
+            # just use difflib here, as unique_lcs was not successfull
+            if apos + start > last_a + 2 and bpos + start > last_b + 2:
+                in_matches = difflib.SequenceMatcher(None, a_ws[last_a:apos+start], b_ws[last_b:bpos+start]).get_matching_blocks()
+                matches.extend([(a+last_a, b+last_b, s) for a,b,s in in_matches if s])
+
             matches.append((apos + start, bpos + start, end - start))
             last_a = apos + end
+            last_b = bpos + end
 
         if end_line < -1:
             matches.append( (len(a_ws) + end_line, len(b_ws) + end_line, -end_line) )
