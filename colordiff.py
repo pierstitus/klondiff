@@ -56,9 +56,9 @@ class DiffWriter(object):
                 'newsame':       'darkyellow',
                 'oldsame':       'darkyellow',
                 'diffstuff':     'darkgreen',
-                'trailingspace': 'yellow',
+                'trailingspace': 'green',
                 'leadingtabs':   'magenta',
-                'longline':      'cyan',
+                'longline':      'white',
             }
             self._read_colordiffrc('/etc/colordiffrc')
             self._read_colordiffrc(os.path.expanduser('~/.colordiffrc'))
@@ -113,7 +113,20 @@ class DiffWriter(object):
         if color is not None:
             if check_style is None:
                 check_style = self.check_style
-            if check_style:
+            if 'check_white' == check_style:
+                bad_ws_match = re.match(r'^([\t ]*)(.*?)([\t ]*)(\r?\n?)$',
+                                        line)
+                if color.startswith('dark'):
+                    space_color = color[4:]
+                else:
+                    space_color = color
+                line = ''.join(terminal.colorstring(txt, color, bcol)
+                    for txt, bcol in (
+                        (bad_ws_match.group(1), space_color),
+                        (bad_ws_match.group(2), None),
+                        (bad_ws_match.group(3), space_color)
+                    )) + bad_ws_match.group(4)
+            elif check_style and type in ('newtext', 'oldtext'):
                 bad_ws_match = re.match(r'^([\t]*)(.*?)([\t ]*)(\r?\n)$',
                                         line)
                 has_leading_tabs = bool(bad_ws_match.group(1))
@@ -180,9 +193,9 @@ class DiffWriter(object):
         def newsame(s):
             return self.colorstring('newsame', s, False)
         def olddel(s):
-            return self.colorstring('oldtext', s, False)
+            return self.colorstring('oldtext', s, 'check_white')
         def newadd(s):
-            return self.colorstring('newtext', s, False)
+            return self.colorstring('newtext', s, 'check_white')
 
         s = SequenceMatcher(None, oldtext[1:], newtext[1:])
         if s.quick_ratio() > 0.6 and s.ratio() > 0.6:
