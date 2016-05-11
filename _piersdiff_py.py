@@ -373,6 +373,7 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
             tag = ''
             if i < ai and j < bj:
                 tag = 'replace'
+                # TODO: find changed lines and separate them from replaced blocks
             elif i < ai:
                 tag = 'delete'
             elif j < bj:
@@ -381,6 +382,7 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
                 answer.append( (tag, i, ai, j, bj) )
             i, j = ai+size, bj+size
 
+            # check matches for junk changes
             n1 = 0
             for n in range(size):
                 if self.a[ai + n] != self.b[bj + n]:
@@ -388,7 +390,20 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
                         answer.append( ('equal', ai + n1, ai + n, bj + n1, bj + n) )
                     n1 = n + 1
                     answer.append( ('replace', ai + n, ai + n + 1, bj + n, bj + n + 1) )
-            if n1 < size - 1:
+            if n1 < size:
                 answer.append( ('equal', ai + n1, ai + size, bj + n1, bj + size) )
+
+        # sanity check if both documents are fully covered
+        errors = []
+        i3 = j3 = 0
+        for t, i1, i2, j1, j2 in answer:
+            if not (i1 == i3 and j1 == j3):
+                errors.append("{} should be {}".format((t, i1, i2, j1, j2), (i3,j3)))
+            i3, j3 = i2, j2
+        if not (i3 == len(self.a) and j3 == len(self.b)):
+            errors.append("{} should end on {}".format((t, i1, i2, j1, j2), (len(self.a), len(self.b))))
+        if errors:
+            errors.append("Error in algorithm, please report")
+            raise Exception('\n'.join(errors))
 
         return answer
