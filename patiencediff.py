@@ -143,31 +143,37 @@ except ImportError:
 
 from _piersdiff_py import PatienceSequenceMatcher_py as PiersSequenceMatcher
 
+import colordiff
+
 def main(args):
     import optparse
+    default_matcher = 'patience'
+    if sys.argv[0].startswith('piers'):
+        default_matcher = 'piers'
     p = optparse.OptionParser(usage='%prog [options] file_a file_b'
                                     '\nFiles can be "-" to read from stdin')
     p.add_option('--patience', dest='matcher', action='store_const', const='patience',
-                 default='patience', help='Use the patience difference algorithm')
+                 default=default_matcher, help='Use the patience difference algorithm')
     p.add_option('--difflib', dest='matcher', action='store_const', const='difflib',
-                 default='patience', help='Use python\'s difflib algorithm')
+                 default=default_matcher, help='Use python\'s difflib algorithm')
     p.add_option('--piers', dest='matcher', action='store_const', const='piers',
-                 default='patience', help='Use piers\'s diff algorithm')
+                 default=default_matcher, help='Use piers\'s diff algorithm')
 
     algorithms = {'patience':PatienceSequenceMatcher, 'difflib':difflib.SequenceMatcher, 'piers':PiersSequenceMatcher,}
 
     (opts, args) = p.parse_args(args)
     matcher = algorithms[opts.matcher]
 
-    print args
     if len(args) == 7:
         args = [args[1], args[4]]
     if len(args) != 2:
         print 'You must supply 2 filenames to diff'
         return -1
 
+    colordiff_writer = colordiff.DiffWriter(sys.stdout)
+
     for line in unified_diff_files(args[0], args[1], sequencematcher=matcher):
-        sys.stdout.write(line)
+        colordiff_writer.write(line)
 
 
 if __name__ == '__main__':
