@@ -29,6 +29,21 @@ import difflib
 __all__ = ['PatienceSequenceMatcher', 'unified_diff', 'unified_diff_files']
 
 
+########################################################################
+###  Unified Diff
+########################################################################
+
+def _format_range_unified(start, stop):
+    'Convert range to the "ed" format'
+    # Per the diff spec at http://www.unix.org/single_unix_specification/
+    beginning = start + 1     # lines start numbering with one
+    length = stop - start
+    if length == 1:
+        return '{}'.format(beginning)
+    if not length:
+        beginning -= 1        # empty ranges begin at line just before the range
+    return '{},{}'.format(beginning, length)
+
 # This is a version of unified_diff which only adds a factory parameter
 # so that you can override the default SequenceMatcher
 # this has been submitted as a patch to python
@@ -53,18 +68,18 @@ def unified_diff(a, b, fromfile='', tofile='', fromfiledate='',
 
     The unidiff format normally has a header for filenames and modification
     times.  Any or all of these may be specified using strings for
-    'fromfile', 'tofile', 'fromfiledate', and 'tofiledate'.  The modification
-    times are normally expressed in the format returned by time.ctime().
+    'fromfile', 'tofile', 'fromfiledate', and 'tofiledate'.
+    The modification times are normally expressed in the ISO 8601 format.
 
     Example:
 
     >>> for line in unified_diff('one two three four'.split(),
     ...             'zero one tree four'.split(), 'Original', 'Current',
-    ...             'Sat Jan 26 23:30:50 1991', 'Fri Jun 06 10:20:52 2003',
+    ...             '2005-01-26 23:30:50', '2010-04-02 10:20:52',
     ...             lineterm=''):
-    ...     print line
-    --- Original Sat Jan 26 23:30:50 1991
-    +++ Current Fri Jun 06 10:20:52 2003
+    ...     print line                  # doctest: +NORMALIZE_WHITESPACE
+    --- Original        2005-01-26 23:30:50
+    +++ Current         2010-04-02 10:20:52
     @@ -1,4 +1,4 @@
     +zero
      one
@@ -76,34 +91,32 @@ def unified_diff(a, b, fromfile='', tofile='', fromfiledate='',
     if sequencematcher is None:
         sequencematcher = difflib.SequenceMatcher
 
-    if fromfiledate:
-        fromfiledate = '\t' + str(fromfiledate)
-    if tofiledate:
-        tofiledate = '\t' + str(tofiledate)
 
     started = False
     for group in sequencematcher(None,a,b).get_grouped_opcodes(n):
         if not started:
-            yield '--- %s%s%s' % (fromfile, fromfiledate, lineterm)
-            yield '+++ %s%s%s' % (tofile, tofiledate, lineterm)
             started = True
-        i1, i2, j1, j2 = group[0][1], group[-1][2], group[0][3], group[-1][4]
-        yield "@@ -%d,%d +%d,%d @@%s" % (i1+1, i2-i1, j1+1, j2-j1, lineterm)
+            fromdate = '\t{}'.format(fromfiledate) if fromfiledate else ''
+            todate = '\t{}'.format(tofiledate) if tofiledate else ''
+            yield '--- {}{}{}'.format(fromfile, fromdate, lineterm)
+            yield '+++ {}{}{}'.format(tofile, todate, lineterm)
+
+        first, last = group[0], group[-1]
+        file1_range = _format_range_unified(first[1], last[2])
+        file2_range = _format_range_unified(first[3], last[4])
+        yield '@@ -{} +{} @@{}'.format(file1_range, file2_range, lineterm)
+
         for tag, i1, i2, j1, j2 in group:
             if tag == 'equal':
                 for line in a[i1:i2]:
                     yield ' ' + line
                 continue
-            if tag == 'delete' or tag == 'replace':
+            if tag in ('replace', 'delete'):
                 for line in a[i1:i2]:
                     yield '-' + line
-            if tag == 'insert' or tag == 'replace':
+            if tag in ('replace', 'insert'):
                 for line in b[j1:j2]:
                     yield '+' + line
-            #if tag == 'replace':
-            #    for line_a, line_b in zip(a[i1:i2], b[j1:j2]):
-            #        yield '-' + line_a
-            #        yield '+' + line_b
 
 
 def unified_diff_files(a, b, sequencematcher=None):
