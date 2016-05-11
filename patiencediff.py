@@ -94,12 +94,16 @@ def unified_diff(a, b, fromfile='', tofile='', fromfiledate='',
                 for line in a[i1:i2]:
                     yield ' ' + line
                 continue
-            if tag == 'replace' or tag == 'delete':
+            if tag == 'delete' or tag == 'replace':
                 for line in a[i1:i2]:
                     yield '-' + line
-            if tag == 'replace' or tag == 'insert':
+            if tag == 'insert' or tag == 'replace':
                 for line in b[j1:j2]:
                     yield '+' + line
+            #if tag == 'replace':
+            #    for line_a, line_b in zip(a[i1:i2], b[j1:j2]):
+            #        yield '-' + line_a
+            #        yield '+' + line_b
 
 
 def unified_diff_files(a, b, sequencematcher=None):
@@ -141,36 +145,37 @@ except ImportError:
         PatienceSequenceMatcher_py as PatienceSequenceMatcher
         )
 
-from _piersdiff_py import PatienceSequenceMatcher_py as PiersSequenceMatcher
+from _klondike_py import KlondikeSequenceMatcher_py as KlondikeSequenceMatcher
 
 import colordiff
 
 def main(args):
     import optparse
     default_matcher = 'patience'
-    if sys.argv[0].startswith('piers'):
-        default_matcher = 'piers'
+    if sys.argv[0].startswith('klondi'):
+        default_matcher = 'klondike'
     p = optparse.OptionParser(usage='%prog [options] file_a file_b'
                                     '\nFiles can be "-" to read from stdin')
     p.add_option('--patience', dest='matcher', action='store_const', const='patience',
                  default=default_matcher, help='Use the patience difference algorithm')
     p.add_option('--difflib', dest='matcher', action='store_const', const='difflib',
                  default=default_matcher, help='Use python\'s difflib algorithm')
-    p.add_option('--piers', dest='matcher', action='store_const', const='piers',
-                 default=default_matcher, help='Use piers\'s diff algorithm')
+    p.add_option('--klondike', dest='matcher', action='store_const', const='klondike',
+                 default=default_matcher, help='Use klondike diff algorithm')
 
-    algorithms = {'patience':PatienceSequenceMatcher, 'difflib':difflib.SequenceMatcher, 'piers':PiersSequenceMatcher,}
+    algorithms = {'patience':PatienceSequenceMatcher, 'difflib':difflib.SequenceMatcher, 'klondike':KlondikeSequenceMatcher,}
 
     (opts, args) = p.parse_args(args)
     matcher = algorithms[opts.matcher]
 
     if len(args) == 7:
+        print args
         args = [args[1], args[4]]
     if len(args) != 2:
         print 'You must supply 2 filenames to diff'
         return -1
 
-    colordiff_writer = colordiff.DiffWriter(sys.stdout)
+    colordiff_writer = colordiff.DiffWriter(sys.stdout, check_style='check_white')
 
     for line in unified_diff_files(args[0], args[1], sequencematcher=matcher):
         colordiff_writer.write(line)
