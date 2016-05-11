@@ -152,7 +152,7 @@ import colordiff
 def main(args):
     import optparse
     default_matcher = 'patience'
-    if sys.argv[0].startswith('klondi'):
+    if os.path.split(sys.argv[0])[1].startswith('klondi'):
         default_matcher = 'klondike'
     p = optparse.OptionParser(usage='%prog [options] file_a file_b'
                                     '\nFiles can be "-" to read from stdin')
@@ -161,7 +161,7 @@ def main(args):
     p.add_option('--difflib', dest='matcher', action='store_const', const='difflib',
                  default=default_matcher, help='Use python\'s difflib algorithm')
     p.add_option('--klondike', dest='matcher', action='store_const', const='klondike',
-                 default=default_matcher, help='Use klondike diff algorithm')
+                 default=default_matcher, help='Use the klondike diff algorithm')
 
     algorithms = {'patience':PatienceSequenceMatcher, 'difflib':difflib.SequenceMatcher, 'klondike':KlondikeSequenceMatcher,}
 
