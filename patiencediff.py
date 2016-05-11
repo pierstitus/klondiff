@@ -141,6 +141,7 @@ except ImportError:
         PatienceSequenceMatcher_py as PatienceSequenceMatcher
         )
 
+from _piersdiff_py import PatienceSequenceMatcher_py as PiersSequenceMatcher
 
 def main(args):
     import optparse
@@ -150,8 +151,10 @@ def main(args):
                  default='patience', help='Use the patience difference algorithm')
     p.add_option('--difflib', dest='matcher', action='store_const', const='difflib',
                  default='patience', help='Use python\'s difflib algorithm')
+    p.add_option('--piers', dest='matcher', action='store_const', const='piers',
+                 default='patience', help='Use piers\'s diff algorithm')
 
-    algorithms = {'patience':PatienceSequenceMatcher, 'difflib':difflib.SequenceMatcher}
+    algorithms = {'patience':PatienceSequenceMatcher, 'difflib':difflib.SequenceMatcher, 'piers':PiersSequenceMatcher,}
 
     (opts, args) = p.parse_args(args)
     matcher = algorithms[opts.matcher]

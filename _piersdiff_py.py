@@ -216,6 +216,7 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
             raise NotImplementedError('Currently we do not support'
                                       ' isjunk for sequence matching')
         difflib.SequenceMatcher.__init__(self, isjunk, a, b)
+        self.nearly_matching_blocks = None
 
     def get_matching_blocks(self):
         """Return list of triples describing matching subsequences.
@@ -240,8 +241,14 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
             return self.matching_blocks
 
         matches = []
-        recurse_matches_py(self.a, self.b, 0, 0,
+
+        a_ws = [s.strip() for s in self.a]
+        b_ws = [s.strip() for s in self.b]
+
+        recurse_matches_py(a_ws, b_ws, 0, 0,
                            len(self.a), len(self.b), matches, 10)
+
+        matches = [m for m in matches if self.a[m[0]] == self.b[m[1]]]
         # Matches now has individual line pairs of
         # line A matches line B, at the given offsets
         self.matching_blocks = _collapse_sequences(matches)
@@ -251,3 +258,124 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
                 _check_consistency(self.matching_blocks)
 
         return self.matching_blocks
+
+    def get_nearly_matching_blocks(self):
+
+        if self.nearly_matching_blocks is not None:
+            return self.nearly_matching_blocks
+
+        a_ws = [s.strip() for s in self.a]
+        b_ws = [s.strip() for s in self.b]
+        # TODO: more junk stripping?
+
+        start_line = 0;
+        while a_ws[start_line] == b_ws[start_line]:
+            start_line += 1
+
+        end_line = -1
+        while a_ws[end_line] == b_ws[end_line]:
+            end_line -= 1
+
+        result = unique_lcs_py(a_ws[start_line:end_line], b_ws[start_line:end_line])
+
+        result = [(apos + start_line, bpos + start_line) for apos, bpos in result]
+
+        matches = []
+        if start_line:
+            matches.append((0, 0, start_line))
+        last_a = start_line
+        for apos, bpos in result:
+            if apos <= last_a:
+                continue
+            start = -1
+            while a_ws[apos + start] == b_ws[bpos + start]:
+                start -= 1
+            start += 1
+            end = 1
+            while a_ws[apos + end] == b_ws[bpos + end]:
+                end += 1
+            matches.append((apos + start, bpos + start, end - start))
+            last_a = apos + end
+
+        if end_line < -1:
+            matches.append( (len(a_ws) + end_line, len(b_ws) + end_line, -end_line) )
+
+        # add dummy tuple
+        matches.append( (len(a_ws), len(b_ws), 0) )
+
+        # check for same lines before and after change
+        for n, (apos, bpos, size) in enumerate(matches[:-1]):
+            d = max(apos + size - matches[n+1][0], bpos + size - matches[n+1][1])
+            if d > 0:
+                for k in range(d): # shift change to go untill empty line, if possible
+                    if a_ws[matches[n+1][0] + d - k - 1] == '':
+                        matches[n] = (matches[n][0], matches[n][1], matches[n][2] - k)
+                        d -= k
+                        break;
+                matches[n+1] = (matches[n+1][0] + d, matches[n+1][1] + d, matches[n+1][2] - d)
+
+        self.nearly_matching_blocks = matches
+        return self.nearly_matching_blocks
+
+    def get_opcodes(self):
+        """Return list of 5-tuples describing how to turn a into b.
+
+        Each tuple is of the form (tag, i1, i2, j1, j2).  The first tuple
+        has i1 == j1 == 0, and remaining tuples have i1 == the i2 from the
+        tuple preceding it, and likewise for j1 == the previous j2.
+
+        The tags are strings, with these meanings:
+
+        'replace':  a[i1:i2] should be replaced by b[j1:j2]
+        'delete':   a[i1:i2] should be deleted.
+                    Note that j1==j2 in this case.
+        'insert':   b[j1:j2] should be inserted at a[i1:i1].
+                    Note that i1==i2 in this case.
+        'equal':    a[i1:i2] == b[j1:j2]
+
+        >>> a = "qabxcd"
+        >>> b = "abycdf"
+        >>> s = SequenceMatcher(None, a, b)
+        >>> for tag, i1, i2, j1, j2 in s.get_opcodes():
+        ...    print ("%7s a[%d:%d] (%s) b[%d:%d] (%s)" %
+        ...           (tag, i1, i2, a[i1:i2], j1, j2, b[j1:j2]))
+         delete a[0:1] (q) b[0:0] ()
+          equal a[1:3] (ab) b[0:2] (ab)
+        replace a[3:4] (x) b[2:3] (y)
+          equal a[4:6] (cd) b[3:5] (cd)
+         insert a[6:6] () b[5:6] (f)
+        """
+
+        if self.opcodes is not None:
+            return self.opcodes
+        i = j = 0
+        self.opcodes = answer = []
+        for ai, bj, size in self.get_nearly_matching_blocks():
+
+            # invariant:  we've pumped out correct diffs to change
+            # a[:i] into b[:j], and the next matching block is
+            # a[ai:ai+size] == b[bj:bj+size].  So we need to pump
+            # out a diff to change a[i:ai] into b[j:bj], pump out
+            # the matching block, and move (i,j) beyond the match
+            tag = ''
+            if i < ai and j < bj:
+                tag = 'replace'
+            elif i < ai:
+                tag = 'delete'
+            elif j < bj:
+                tag = 'insert'
+            if tag:
+                answer.append( (tag, i, ai, j, bj) )
+            i, j = ai+size, bj+size
+
+            n1 = 0
+            for n in range(size):
+                if self.a[ai + n] != self.b[bj + n]:
+                    if n1 < n:
+                        answer.append( ('equal', ai + n1, ai + n, bj + n1, bj + n) )
+                    n1 = n + 1
+                    answer.append( ('replace', ai + n, ai + n + 1, bj + n, bj + n + 1) )
+            if n1 < size - 1:
+                answer.append( ('equal', ai + n1, ai + size, bj + n1, bj + size) )
+
+        return answer
