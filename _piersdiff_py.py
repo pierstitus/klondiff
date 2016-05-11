@@ -20,6 +20,8 @@ from __future__ import absolute_import
 from bisect import bisect
 import difflib
 
+import re
+
 from bzrlib.trace import mutter
 
 
@@ -264,21 +266,24 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
         if self.nearly_matching_blocks is not None:
             return self.nearly_matching_blocks
 
-        a_ws = [s.strip().replace(' ','').replace('\t','') for s in self.a]
-        b_ws = [s.strip().replace(' ','').replace('\t','') for s in self.b]
+        # remove whitespace and repeated characters
+        clear_junk = re.compile(r'(.)\1*(?=\1{2})|[ \t\r\n]*')
+        a_ws = [clear_junk.sub('', s) for s in self.a]
+        b_ws = [clear_junk.sub('', s) for s in self.b]
+        #a_ws = [s.strip().replace(' ','').replace('\t','') for s in self.a]
+        #b_ws = [s.strip().replace(' ','').replace('\t','') for s in self.b]
         # TODO: more junk stripping?
 
+        # first match blocks at beginning and end of file
         start_line = 0;
         while a_ws[start_line] == b_ws[start_line]:
             start_line += 1
-
         end_line = -1
         while a_ws[end_line] == b_ws[end_line]:
             end_line -= 1
 
-        # find LCS of unique lines
+        # in the rest find LCS of unique lines
         result = unique_lcs_py(a_ws[start_line:end_line], b_ws[start_line:end_line])
-
         result = [(apos + start_line, bpos + start_line) for apos, bpos in result]
 
         # grow unique matches with surrounding lines
@@ -302,7 +307,7 @@ class PatienceSequenceMatcher_py(difflib.SequenceMatcher):
 
             # search for additional matches which might not have been found due to not unique lines
             # just use difflib here, as unique_lcs was not successfull
-            if apos + start > last_a + 2 and bpos + start > last_b + 2:
+            if apos + start > last_a and bpos + start > last_b and apos + bpos + 2 * start > last_a + last_b + 2:
                 in_matches = difflib.SequenceMatcher(None, a_ws[last_a:apos+start], b_ws[last_b:bpos+start]).get_matching_blocks()
                 matches.extend([(a+last_a, b+last_b, s) for a,b,s in in_matches if s])
 
