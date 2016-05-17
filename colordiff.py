@@ -198,7 +198,7 @@ class DiffWriter(object):
             return self.colorstring('newtext', s, 'check_white')
 
         s = SequenceMatcher(None, oldtext[1:], newtext[1:])
-        if s.quick_ratio() > 0.6 and s.ratio() > 0.6:
+        if max(m[2] for m in s.get_matching_blocks()) >= 5:#s.quick_ratio() > 0.6 and s.ratio() > 0.6:
             matches = s.get_matching_blocks()
             matches = [m for m in matches if m[2] == 0 or m[2] >= 3]
             oldtext = oldtext[1:]
