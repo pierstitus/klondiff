@@ -301,7 +301,14 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
                                     answer.append( add_tag((
                                         i + prev_an, i + cur_an - 1,
                                         j + prev_bn, j + cur_bn - 1 )) )
-                                answer.append( ('replace',
+                                # extra check if replaced lines are equal, sometimes happens somehow
+                                if self.a[i + cur_an - 1] == self.b[j + cur_bn - 1]:
+                                    print 'why missed by Patiencediff and Difflib?'
+                                    print self.a[i + cur_an - 1]
+                                    tag = 'equal'
+                                else:
+                                    tag = 'replace'
+                                answer.append( (tag,
                                     i + cur_an - 1, i + cur_an,
                                     j + cur_bn - 1, j + cur_bn) )
                                 prev_an, prev_bn = cur_an, cur_bn
