@@ -164,6 +164,10 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
         end_line = -1
         while a_ws[end_line] == b_ws[end_line]:
             end_line -= 1
+        end_line += 1
+        if end_line == 0:
+            # use None for slicing till the end
+            end_line = None
 
         # in the rest find LCS of unique lines
         result = unique_lcs_py(a_ws[start_line:end_line], b_ws[start_line:end_line])
@@ -198,7 +202,7 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
             last_a = apos + end
             last_b = bpos + end
 
-        if end_line < -1:
+        if end_line != None:
             matches.append( (len(a_ws) + end_line, len(b_ws) + end_line, -end_line) )
 
         # add dummy tuple
