@@ -158,7 +158,7 @@ except ImportError:
         PatienceSequenceMatcher_py as PatienceSequenceMatcher
         )
 
-from _klondike_py import KlondikeSequenceMatcher_py as KlondikeSequenceMatcher
+from klondikediff import KlondikeSequenceMatcher
 
 import colordiff
 

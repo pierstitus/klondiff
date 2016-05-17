@@ -113,7 +113,7 @@ def _check_consistency(answer):
         next_b = b + match_len
 
 
-class KlondikeSequenceMatcher_py(difflib.SequenceMatcher):
+class KlondikeSequenceMatcher(difflib.SequenceMatcher):
     """Compare a pair of sequences using longest common subset."""
 
     _do_check_consistency = True
@@ -217,7 +217,7 @@ class KlondikeSequenceMatcher_py(difflib.SequenceMatcher):
 
         self.matching_blocks = matches
 
-        if KlondikeSequenceMatcher_py._do_check_consistency:
+        if KlondikeSequenceMatcher._do_check_consistency:
             if __debug__:
                 _check_consistency(self.matching_blocks)
 
