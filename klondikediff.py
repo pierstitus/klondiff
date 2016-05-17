@@ -21,6 +21,8 @@ from bisect import bisect
 import difflib
 import re
 
+import myersdiff
+
 # function copied from Bram Cohen's Patience diff from bzr
 def unique_lcs_py(a, b):
     """Find the longest common subset for unique lines.
@@ -195,7 +197,7 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
             # Search for additional matches which might not have been found due to not unique lines
             # Use difflib here, as unique_lcs was not successfull this give better chances
             if apos + start > last_a and bpos + start > last_b and apos + bpos + 2 * start > last_a + last_b + 2:
-                in_matches = difflib.SequenceMatcher(None, a_ws[last_a:apos+start], b_ws[last_b:bpos+start]).get_matching_blocks()
+                in_matches = myersdiff.MyersSequenceMatcher(None, a_ws[last_a:apos+start], b_ws[last_b:bpos+start]).get_matching_blocks()
                 matches.extend([(a+last_a, b+last_b, s) for a,b,s in in_matches if s])
 
             matches.append((apos + start, bpos + start, end - start))
@@ -280,14 +282,13 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
                 tag = 'replace'
                 # find changed lines and separate them from replaced blocks
                 # TODO: handling of split or combined lines could be improved
-                # TODO: difflib seems to mess up sometimes, like with these lines
                 if self.extra_effort and (i < ai - 1 or j < bj - 1):
                     a = 'a\n'.join(self.a_ws[i:ai])
                     b = 'b\n'.join(self.b_ws[j:bj])
                     cur_a = cur_b = 0
                     cur_an = cur_bn = 0
                     prev_an = prev_bn = 0
-                    matches = difflib.SequenceMatcher(None, a, b).get_matching_blocks()
+                    matches = myersdiff.InlineMyersSequenceMatcher(None, a, b).get_matching_blocks()
                     for m in matches:
                         if m[2] >= 5: # only act when matches of at least 5 chars found
                             while cur_a <= m[0]:
