@@ -25,6 +25,7 @@ import time
 import difflib
 """)
 
+import re
 
 __all__ = ['PatienceSequenceMatcher', 'unified_diff', 'unified_diff_files']
 
@@ -49,7 +50,7 @@ def _format_range_unified(start, stop):
 # this has been submitted as a patch to python
 def unified_diff(a, b, fromfile='', tofile='', fromfiledate='',
                  tofiledate='', n=3, lineterm='\n',
-                 sequencematcher=None):
+                 sequencematcher=None, function_regexp=r'^\w'):
     r"""
     Compare two sequences of lines; generate the delta as a unified diff.
 
@@ -91,6 +92,11 @@ def unified_diff(a, b, fromfile='', tofile='', fromfiledate='',
     if sequencematcher is None:
         sequencematcher = difflib.SequenceMatcher
 
+    function_lines = []
+    if function_regexp:
+        function_regexp = re.compile(function_regexp)
+        function_lines = [k for k, line in enumerate(a) if function_regexp.match(line)]
+        current_function = 0
 
     started = False
     for group in sequencematcher(None,a,b).get_grouped_opcodes(n):
@@ -104,7 +110,16 @@ def unified_diff(a, b, fromfile='', tofile='', fromfiledate='',
         first, last = group[0], group[-1]
         file1_range = _format_range_unified(first[1], last[2])
         file2_range = _format_range_unified(first[3], last[4])
-        yield '@@ -{} +{} @@{}'.format(file1_range, file2_range, lineterm)
+        if function_lines:
+            while current_function < len(function_lines) and function_lines[current_function] < first[1] + n:
+                current_function += 1
+            if current_function > 0:
+                function = ' ' + a[function_lines[current_function - 1]]
+            else:
+                function = ''
+        else:
+            function = ''
+        yield '@@ -{} +{} @@{}{}'.format(file1_range, file2_range, function, lineterm)
 
         for tag, i1, i2, j1, j2 in group:
             if tag == 'equal':
