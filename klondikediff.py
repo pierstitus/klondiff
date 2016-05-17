@@ -118,12 +118,12 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
 
     _do_check_consistency = True
 
-    def __init__(self, isjunk=None, a='', b=''):
+    def __init__(self, isjunk=None, a='', b='', extra_effort=1):
         if isjunk is not None:
             raise NotImplementedError('Currently we do not support'
                                       ' isjunk for sequence matching')
         difflib.SequenceMatcher.__init__(self, isjunk, a, b)
-        self.nearly_matching_blocks = None
+        self.extra_effort = extra_effort
 
     def get_matching_blocks(self):
         """Return list of triples describing matching subsequences.
@@ -151,8 +151,8 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
 
         # remove whitespace and repeated characters
         clear_junk = re.compile(r'(.)\1*(?=\1{2})|[ \t\r\n]*')
-        a_ws = [clear_junk.sub('', s) for s in self.a]
-        b_ws = [clear_junk.sub('', s) for s in self.b]
+        self.a_ws = a_ws = [clear_junk.sub('', s) for s in self.a]
+        self.b_ws = b_ws = [clear_junk.sub('', s) for s in self.b]
         #a_ws = [s.strip().replace(' ','').replace('\t','') for s in self.a]
         #b_ws = [s.strip().replace(' ','').replace('\t','') for s in self.b]
         # TODO: more junk stripping?
@@ -175,7 +175,7 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
             matches.append((0, 0, start_line))
         last_a = last_b = start_line
         for apos, bpos in result:
-            # if previous match overlaps current just skip it. 
+            # if previous match overlaps current just skip it.
             # Only a is checked because lines are unique anyway
             # TODO: check if <= is correct, print((apos-last_a,bpos-last_b))
             if apos <= last_a:
@@ -254,6 +254,14 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
 
         if self.opcodes is not None:
             return self.opcodes
+
+        def add_tag(t):
+            tag = 'replace'
+            if t[0] == t[1]:
+                tag = 'insert'
+            elif t[2] == t[3]:
+                tag = 'delete'
+            return (tag,) + t
         i = j = 0
         self.opcodes = answer = []
         for ai, bj, size in self.get_matching_blocks():
@@ -266,7 +274,39 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
             tag = ''
             if i < ai and j < bj:
                 tag = 'replace'
-                # TODO: find changed lines and separate them from replaced blocks
+                # find changed lines and separate them from replaced blocks
+                # TODO: handling of split or combined lines could be improved
+                # TODO: difflib seems to mess up sometimes, like with these lines
+                if self.extra_effort and (i < ai - 1 or j < bj - 1):
+                    a = 'a\n'.join(self.a_ws[i:ai])
+                    b = 'b\n'.join(self.b_ws[j:bj])
+                    cur_a = cur_b = 0
+                    cur_an = cur_bn = 0
+                    prev_an = prev_bn = 0
+                    matches = difflib.SequenceMatcher(None, a, b).get_matching_blocks()
+                    for m in matches:
+                        if m[2] >= 5: # only act when matches of at least 5 chars found
+                            while cur_a <= m[0]:
+                                cur_a += len(self.a_ws[i+cur_an]) + 2
+                                cur_an += 1
+                            while cur_b <= m[1]:
+                                cur_b += len(self.b_ws[j+cur_bn]) + 2
+                                cur_bn += 1
+                            if prev_an < cur_an and prev_bn < cur_bn:
+                                if prev_an < cur_an - 1 or prev_bn < cur_bn - 1:
+                                    answer.append( add_tag((
+                                        i + prev_an, i + cur_an - 1,
+                                        j + prev_bn, j + cur_bn - 1 )) )
+                                answer.append( ('replace',
+                                    i + cur_an - 1, i + cur_an,
+                                    j + cur_bn - 1, j + cur_bn) )
+                                prev_an, prev_bn = cur_an, cur_bn
+
+                    if i + prev_an < ai or j + prev_bn < bj:
+                        answer.append( add_tag((
+                            i + prev_an, ai,
+                            j + prev_bn, bj)) )
+                    tag = ''
             elif i < ai:
                 tag = 'delete'
             elif j < bj:
