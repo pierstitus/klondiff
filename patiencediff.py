@@ -190,6 +190,10 @@ def main(args):
                  default=default_matcher, help='Use python\'s difflib algorithm')
     p.add_option('--klondike', dest='matcher', action='store_const', const='klondike',
                  default=default_matcher, help='Use the klondike diff algorithm')
+    # TODO: implement more command line options
+    #p.add_option('--unified', '-u', help='output NUM (default 3) lines of unified context')
+    #p.add_option('--show-function-line', '-F', help='show the most recent line matching RE')
+    #p.add_option('--color', '-c')
 
     algorithms = {'patience':PatienceSequenceMatcher, 'difflib':difflib.SequenceMatcher, 'klondike':KlondikeSequenceMatcher,}
 
