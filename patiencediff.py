@@ -207,7 +207,7 @@ def main(args):
         print 'You must supply 2 filenames to diff'
         return -1
 
-    colordiff_writer = colordiff.DiffWriter(sys.stdout, check_style='check_white')
+    colordiff_writer = colordiff.DiffWriter(sys.stdout)
 
     for line in unified_diff_files(args[0], args[1], sequencematcher=matcher):
         colordiff_writer.write(line)

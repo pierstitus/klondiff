@@ -51,12 +51,12 @@ class DiffWriter(object):
             self.colors = {
                 'metaline':      'darkyellow',
                 'plain':         'darkwhite',
-                'newtext':       'darkblue',
+                'newtext':       'darkgreen',
                 'oldtext':       'darkred',
                 'newsame':       'darkyellow',
                 'oldsame':       'darkyellow',
-                'diffstuff':     'darkgreen',
-                'trailingspace': 'green',
+                'diffstuff':     'darkcyan',
+                'trailingspace': 'red',
                 'leadingtabs':   'magenta',
                 'longline':      'white',
             }
@@ -111,49 +111,24 @@ class DiffWriter(object):
     def colorstring(self, type, line, check_style=None):
         color = self.colors[type]
         if color is not None:
-            if check_style is None:
-                check_style = self.check_style
-            if 'check_white' == check_style:
-                bad_ws_match = re.match(r'^([\t ]*)(.*?)([\t ]*)(\r?\n?)$',
+            if 'newtext' == type:
+                bad_ws_match = re.match(r'^(.*?)([\t ]*)(\r?\n)$',
                                         line)
-                if color.startswith('dark'):
-                    space_color = color[4:]
-                else:
-                    space_color = color
-                line = ''.join(terminal.colorstring(txt, color, bcol)
-                    for txt, bcol in (
-                        (bad_ws_match.group(1), space_color),
-                        (bad_ws_match.group(2), None),
-                        (bad_ws_match.group(3), space_color)
-                    )) + bad_ws_match.group(4)
-            elif check_style and type in ('newtext', 'oldtext'):
-                bad_ws_match = re.match(r'^([\t]*)(.*?)([\t ]*)(\r?\n)$',
+                if bad_ws_match:
+                    return ''.join(terminal.colorstring(txt, color, bcol)
+                        for txt, bcol in (
+                            (bad_ws_match.group(1), None),
+                            (bad_ws_match.group(2), self.colors['trailingspace'])
+                        )) + bad_ws_match.group(3)
+            elif 'diffstuff' == type:
+                diffstuff_match = re.match(r'^(@@[^@]*@@)(.*)$',
                                         line)
-                has_leading_tabs = bool(bad_ws_match.group(1))
-                has_trailing_whitespace = bool(bad_ws_match.group(3))
-                if 'newtext' == type:
-                    if has_leading_tabs:
-                        self.added_leading_tabs += 1
-                    if has_trailing_whitespace:
-                        self.added_trailing_whitespace += 1
-                    if (len(bad_ws_match.group(2)) > self.max_line_len and
-                        not line.startswith('++ ')):
-                        self.long_lines += 1
-
-                #highlight were needed
-                line = ''.join(terminal.colorstring(txt, color, bcol)
-                    for txt, bcol in (
-                        (bad_ws_match.group(1).expandtabs(),
-                             self.colors['leadingtabs']),
-                        (bad_ws_match.group(2)[0:self.max_line_len], None),
-                        (bad_ws_match.group(2)[self.max_line_len:],
-                             self.colors['longline']),
-                        (bad_ws_match.group(3), self.colors['trailingspace'])
-                    )) + bad_ws_match.group(4)
-            string = terminal.colorstring(str(line), color)
+                if diffstuff_match:
+                    return (terminal.colorstring(diffstuff_match.group(1), self.colors['diffstuff'])
+                            + diffstuff_match.group(2))
+            return terminal.colorstring(str(line), color)
         else:
-            string = str(line)
-        return string
+            return str(line)
 
     def write(self, text):
         newstuff = text.split('\n')
