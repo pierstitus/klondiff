@@ -28,4 +28,6 @@ Beware that not everything is polished yet, see TODO file.
 
 ## Why Klondike?
 
-Klondike is a version of Patience, and brings the gold to the surface in diffs with many junk changes.
+[Klondike](https://en.wikipedia.org/wiki/Klondike_(solitaire)) is a version of Patience, and brings the gold to the surface in diffs with many junk changes.
+
+Piers Titus van der Torren
