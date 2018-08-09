@@ -18,13 +18,13 @@ Use with pager:
 
 Use with git:
 
-Make a symlink to `git-klondiff` somewhere in your path, e.g. ~/bin/, then you can use
+For incidental use make a symlink to `git-klondiff` somewhere in your path, e.g. ~/bin/, then you can use
 
     git klondiff
 
-Or set the shell variable GIT_EXTERNAL_DIFF to ~/bin/klondiff (assuming that's symlink to patiencediff.py)
+To use klondiff by default set your configuration (assuming ~/bin/klondiff is a symlink to patiencediff.py)
 
-Beware that not everything is polished yet, see TODO file.
+    git config --global diff.external ~/bin/klondiff
 
 ## Why Klondike?
 
