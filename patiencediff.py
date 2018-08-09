@@ -188,12 +188,20 @@ def unified_diff(a, b, fromfile='', tofile='', fromfiledate='',
                     yield '+' + line
 
 
-def unified_diff_files(a, b, sequencematcher=None):
+def unified_diff_files(a, b, sequencematcher=None, displaynames=None):
     """Generate the diff for two files.
     """
     # Should this actually be an error?
     if a == b:
         return []
+
+    if displaynames:
+        aname = displaynames[0]
+        bname = displaynames[1]
+    else:
+        aname = a
+        bname = b
+
     if a == '-':
         file_a = sys.stdin
         time_a = time.time()
@@ -208,9 +216,9 @@ def unified_diff_files(a, b, sequencematcher=None):
         file_b = open(b, 'rb')
         time_b = os.stat(b).st_mtime
 
-    # TODO: Include fromfiledate and tofiledate
+    # TODO: Include fromfiledate and tofiledate if displaynames is not set
     return unified_diff(file_a.readlines(), file_b.readlines(),
-                        fromfile=a, tofile=b,
+                        fromfile=aname, tofile=bname,
                         sequencematcher=sequencematcher)
 
 
@@ -255,8 +263,28 @@ def main(args):
     matcher = algorithms[opts.matcher]
 
     # check for git external diff syntax
+    # TODO: check if git header is correct, old/new mode isn't handled
+    displaynames = None
     if len(args) == 7:
-        print args
+        displaynames = ['a/' + args[0], 'b/' + args[0]]
+        print('diff --git {0} {1}'.format(*displaynames))
+        if '/dev/null' == args[1]:
+            print('new file mode ' + args[6])
+            args[2] = '0000000'
+            args[3] = ''
+            displaynames[0] = '/dev/null'
+        if '/dev/null' == args[4]:
+            print('deleted file mode ' + args[3])
+            args[5] = '0000000'
+            args[3] = ''
+            displaynames[1] = '/dev/null'
+        print('index {0}..{1} {2}'.format(args[2][:7], args[5][:7], args[3]))
+        args = [args[1], args[4]]
+    # git undocumented 9 parameter rename syntax (with git diff -M)
+    elif len(args) == 9:
+        displaynames = ['a/' + args[0], 'b/' + args[7]]
+        print('diff --git {0} {1}'.format(*displaynames))
+        print(args[8].strip())
         args = [args[1], args[4]]
 
     if len(args) != 2:
@@ -273,7 +301,7 @@ def main(args):
 
     colordiff_writer = colordiff.DiffWriter(sys.stdout)
 
-    for line in unified_diff_files(args[0], args[1], sequencematcher=matcher):
+    for line in unified_diff_files(args[0], args[1], sequencematcher=matcher, displaynames=displaynames):
         colordiff_writer.write(line)
 
 
