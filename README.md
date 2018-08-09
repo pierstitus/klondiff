@@ -5,6 +5,7 @@ This project is my go at creating an improved diff algorithm, inspired by the Pa
 The main focus is improving the readability of the diff output. The main changes are:
 
 - Whitespace changes and repeated characters (e.g. '=========') have reduced influence.
+- Short lines are neglected, reducing wrong line matches, with for example only brackets.
 - Blocks with changes are interleaved, making it easer to see line differences.
 - In colored diff output the unchanged parts of changed lines are displayed in gold.
 
