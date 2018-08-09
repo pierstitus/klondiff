@@ -299,7 +299,7 @@ def main(args):
         print('Binary files %s and %s differ' % (args[0], args[1]))
         return 2
 
-    colordiff_writer = colordiff.DiffWriter(sys.stdout)
+    colordiff_writer = colordiff.DiffWriter(sys.stdout, color='always')
 
     for line in unified_diff_files(args[0], args[1], sequencematcher=matcher, displaynames=displaynames):
         colordiff_writer.write(line)

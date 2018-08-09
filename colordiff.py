@@ -47,7 +47,8 @@ class DiffWriter(object):
         self.lp = LineParser()
         self.oldtext_hold = None
         self.chunks = []
-        if 'always' == color or ('auto' == color and terminal.has_ansi_colors()):
+        self.color = 'always' == color or ('auto' == color and terminal.has_ansi_colors())
+        if self.color:
             self.colors = {
                 'metaline':      'darkyellow',
                 'plain':         'darkwhite',
@@ -121,7 +122,7 @@ class DiffWriter(object):
                             (bad_ws_match.group(2), self.colors['trailingspace'])
                         )) + bad_ws_match.group(3)
             elif 'diffstuff' == type:
-                diffstuff_match = re.match(r'^(@@[^@]*@@)(.*)$',
+                diffstuff_match = re.match(r'^(@@[^@]*@@)(.*\r?\n)$',
                                         line)
                 if diffstuff_match:
                     return (terminal.colorstring(diffstuff_match.group(1), self.colors['diffstuff'])
@@ -131,11 +132,14 @@ class DiffWriter(object):
             return str(line)
 
     def write(self, text):
-        newstuff = text.split('\n')
-        for newchunk in newstuff[:-1]:
-            self._writeline(''.join(self.chunks + [newchunk, '\n']))
-            self.chunks = []
-        self.chunks = [newstuff[-1]]
+        if self.color:
+            newstuff = text.split('\n')
+            for newchunk in newstuff[:-1]:
+                self._writeline(''.join(self.chunks + [newchunk, '\n']))
+                self.chunks = []
+            self.chunks = [newstuff[-1]]
+        else:
+            self.target.writelines(text)
 
     def writelines(self, lines):
         for line in lines:
