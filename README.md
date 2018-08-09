@@ -16,9 +16,15 @@ Use with pager:
 
     klondiff file_a file_b | less -R
 
-Use with git: (assuming you have a symlink named klondiff to patiencediff.py in ~/bin/)
+Use with git:
 
-    GIT_EXTERNAL_DIFF=~/bin/klondiff git diff
+Make a symlink to `git-klondiff` somewhere in your path, e.g. ~/bin/, then you can use
+
+    git klondiff
+
+Or set the shell variable GIT_EXTERNAL_DIFF to ~/bin/klondiff (assuming that's symlink to patiencediff.py)
+
+Beware that not everything is polished yet, see TODO file.
 
 ## Why Klondike?
 
