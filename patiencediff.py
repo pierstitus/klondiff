@@ -17,6 +17,9 @@
 
 from __future__ import absolute_import
 
+import sys
+PY3 = sys.version_info[0] == 3
+
 from bzrlib.lazy_import import lazy_import
 lazy_import(globals(), """
 import os
@@ -28,6 +31,57 @@ import difflib
 import re
 
 __all__ = ['PatienceSequenceMatcher', 'unified_diff', 'unified_diff_files']
+
+
+########################################################################
+###  Binary file test
+########################################################################
+
+# A function that takes an integer in the 8-bit range and returns
+# a single-character byte object in py3 / a single-character string
+# in py2.
+#
+int2byte = (lambda x: bytes((x,))) if PY3 else chr
+
+_text_characters = (
+        b''.join(int2byte(i) for i in range(32, 127)) +
+        b'\n\r\t\f\b')
+
+def istext(block):
+    """ Uses heuristics to guess whether the given file is text or binary,
+        by reading a single block of bytes from the file.
+        If more than 30% of the chars in the block are non-text, or there
+        are NUL ('\x00') bytes in the block, assume this is a binary file.
+    """
+    if b'\x00' in block:
+        # Files with null bytes are binary
+        return False
+    elif not block:
+        # An empty file is considered a valid text file
+        return True
+
+    # Use translate's 'deletechars' argument to efficiently remove all
+    # occurrences of _text_characters from the block
+    nontext = block.translate(None, _text_characters)
+    return float(len(nontext)) / len(block) <= 0.30
+
+def binary_test(file1, file2, blocksize=512):
+    with open(file1) as f1:
+        with open(file2) as f2:
+            block1 = f1.read(blocksize)
+            block2 = f2.read(blocksize)
+
+            if istext(block1) and istext(block2):
+                return 'text'
+
+            while block1 and block2 and block1 == block2:
+                block1 = f1.read(blocksize)
+                block2 = f2.read(blocksize)
+
+            if block1 or block2:
+                return 'binary_different'
+            else:
+                return 'binary_same'
 
 
 ########################################################################
@@ -200,12 +254,22 @@ def main(args):
     (opts, args) = p.parse_args(args)
     matcher = algorithms[opts.matcher]
 
+    # check for git external diff syntax
     if len(args) == 7:
         print args
         args = [args[1], args[4]]
+
     if len(args) != 2:
         print 'You must supply 2 filenames to diff'
         return -1
+
+    # check for binary files
+    result = binary_test(args[0], args[1])
+    if 'binary_same' == result:
+        return 0
+    elif 'binary_different' == result:
+        print('Binary files %s and %s differ' % (args[0], args[1]))
+        return 2
 
     colordiff_writer = colordiff.DiffWriter(sys.stdout)
 
