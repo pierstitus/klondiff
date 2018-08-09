@@ -262,33 +262,37 @@ def main(args):
     (opts, args) = p.parse_args(args)
     matcher = algorithms[opts.matcher]
 
+    colordiff_writer = colordiff.DiffWriter(sys.stdout, color='always')
+    def print_color(type, line):
+        colordiff_writer.target.writelines(colordiff_writer.colorstring(type, line) + '\n')
+
     # check for git external diff syntax
     # TODO: check if git header is correct, old/new mode isn't handled
     displaynames = None
     if len(args) == 7:
         displaynames = ['a/' + args[0], 'b/' + args[0]]
-        print('diff --git {0} {1}'.format(*displaynames))
+        print_color('metaline', 'diff --git {0} {1}'.format(*displaynames))
         if '/dev/null' == args[1]:
-            print('new file mode ' + args[6])
+            print_color('metaline', 'new file mode ' + args[6])
             args[2] = '0000000'
             args[3] = ''
             displaynames[0] = '/dev/null'
         if '/dev/null' == args[4]:
-            print('deleted file mode ' + args[3])
+            print_color('metaline', 'deleted file mode ' + args[3])
             args[5] = '0000000'
             args[3] = ''
             displaynames[1] = '/dev/null'
-        print('index {0}..{1} {2}'.format(args[2][:7], args[5][:7], args[3]))
+        print_color('metaline', 'index {0}..{1} {2}'.format(args[2][:7], args[5][:7], args[3]))
         args = [args[1], args[4]]
     # git undocumented 9 parameter rename syntax (with git diff -M)
     elif len(args) == 9:
         displaynames = ['a/' + args[0], 'b/' + args[7]]
-        print('diff --git {0} {1}'.format(*displaynames))
-        print(args[8].strip())
+        print_color('metaline', 'diff --git {0} {1}'.format(*displaynames))
+        print_color('metaline', args[8].strip())
         args = [args[1], args[4]]
 
     if len(args) != 2:
-        print 'You must supply 2 filenames to diff'
+        print('You must supply 2 filenames')
         return -1
 
     # check for binary files
@@ -298,8 +302,6 @@ def main(args):
     elif 'binary_different' == result:
         print('Binary files %s and %s differ' % (args[0], args[1]))
         return 2
-
-    colordiff_writer = colordiff.DiffWriter(sys.stdout, color='always')
 
     for line in unified_diff_files(args[0], args[1], sequencematcher=matcher, displaynames=displaynames):
         colordiff_writer.write(line)

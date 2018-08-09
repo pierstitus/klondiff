@@ -30,6 +30,8 @@ class LineParser(object):
     def parse_line(self, line):
         if line.startswith("@"):
             return "diffstuff"
+        elif line.startswith("+++ ") or line.startswith("--- "):
+            return "metaline"
         elif line.startswith("+"):
             return "newtext"
         elif line.startswith("-"):
@@ -50,8 +52,8 @@ class DiffWriter(object):
         self.color = 'always' == color or ('auto' == color and terminal.has_ansi_colors())
         if self.color:
             self.colors = {
-                'metaline':      'darkyellow',
-                'plain':         'darkwhite',
+                'metaline':      'white',
+                'plain':         None,
                 'newtext':       'darkgreen',
                 'oldtext':       'darkred',
                 'newsame':       'darkyellow',

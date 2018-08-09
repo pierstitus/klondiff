@@ -1,9 +1,6 @@
-- detect binary files or large files
-- header (date for normal use, git like header for git diff)
 - check no newline at end of file
 - detect long run time
 - test difference of using patience or myers internally
-- support /dev/null
 
 Integrate with existing tools:
 Meld:
