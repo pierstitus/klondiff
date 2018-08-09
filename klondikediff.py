@@ -304,8 +304,8 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
                                         j + prev_bn, j + cur_bn - 1 )) )
                                 # extra check if replaced lines are equal, sometimes happens somehow
                                 if self.a[i + cur_an - 1] == self.b[j + cur_bn - 1]:
-                                    print 'why missed by Patiencediff and Difflib?'
-                                    print self.a[i + cur_an - 1]
+                                    #print 'why missed by Patiencediff and Difflib?'
+                                    #print self.a[i + cur_an - 1]
                                     tag = 'equal'
                                 else:
                                     tag = 'replace'
