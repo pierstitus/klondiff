@@ -134,36 +134,36 @@ class DiffWriter(object):
             return str(line)
 
     def write(self, text):
-        if self.color:
-            newstuff = text.split('\n')
-            for newchunk in newstuff[:-1]:
-                self._writeline(''.join(self.chunks + [newchunk, '\n']))
-                self.chunks = []
-            self.chunks = [newstuff[-1]]
-        else:
-            self.target.writelines(text)
+        newstuff = text.split('\n')
+        for newchunk in newstuff[:-1]:
+            self.writeline(''.join(self.chunks + [newchunk, '\n']))
+            self.chunks = []
+        self.chunks = [newstuff[-1]]
 
     def writelines(self, lines):
         for line in lines:
-            self.write(line)
+            self.writeline(line)
 
-    def _writeline(self, line):
-        output = []
-        line_type = self.lp.parse_line(line)
-        if None != self.oldtext_hold:
-            if 'newtext' == line_type:
-                output.extend(self.parse_changed_line(self.oldtext_hold, line))
-                self.target.writelines(output)
+    def writeline(self, line):
+        if self.color:
+            output = []
+            line_type = self.lp.parse_line(line)
+            if None != self.oldtext_hold:
+                if 'newtext' == line_type:
+                    output.extend(self.parse_changed_line(self.oldtext_hold, line))
+                    self.target.writelines(output)
+                    self.oldtext_hold = None
+                    return
+                else:
+                    output.append(self.colorstring('oldtext', self.oldtext_hold))
                 self.oldtext_hold = None
-                return
+            if 'oldtext' == line_type:
+                self.oldtext_hold = line
             else:
-                output.append(self.colorstring('oldtext', self.oldtext_hold))
-            self.oldtext_hold = None
-        if 'oldtext' == line_type and not line.startswith('---'):
-            self.oldtext_hold = line
+                output.append(self.colorstring(line_type, line))
+            self.target.writelines(output)
         else:
-            output.append(self.colorstring(line_type, line))
-        self.target.writelines(output)
+            self.target.writelines(line)
 
     def flush(self):
         self.target.flush()

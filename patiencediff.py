@@ -304,7 +304,11 @@ def main(args):
         return 2
 
     for line in unified_diff_files(args[0], args[1], sequencematcher=matcher, displaynames=displaynames):
-        colordiff_writer.write(line)
+        if line.endswith('\n'):
+            colordiff_writer.writeline(line)
+        else:
+            # line including warning is seen as one line, even though it's printed on two lines
+            colordiff_writer.writeline(line + '\n\\ No newline at end of file\n')
 
 
 if __name__ == '__main__':
