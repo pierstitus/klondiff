@@ -27,6 +27,10 @@ To use klondiff by default set your configuration (assuming ~/bin/klondiff is a 
 
     git config --global diff.external ~/bin/klondiff
 
+To use klondiff for creating patches use
+
+    git format-patch --ext-diff
+
 ## Why Klondike?
 
 [Klondike](https://en.wikipedia.org/wiki/Klondike_(solitaire)) is a version of Patience, and brings the gold to the surface in diffs with many junk changes.

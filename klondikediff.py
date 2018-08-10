@@ -187,12 +187,14 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
             # TODO: check if <= is correct, print((apos-last_a,bpos-last_b))
             if apos <= last_a:
                 continue
+            max_start = -min(apos, bpos)
             start = -1
-            while a_ws[apos + start] == b_ws[bpos + start]:
+            while start >= max_start and a_ws[apos + start] == b_ws[bpos + start]:
                 start -= 1
             start += 1
+            max_end = min(len(a_ws) - apos, len(b_ws) - bpos)
             end = 1
-            while a_ws[apos + end] == b_ws[bpos + end]:
+            while end < max_end and a_ws[apos + end] == b_ws[bpos + end]:
                 end += 1
 
             # Search for additional matches which might not have been found due to not unique lines
