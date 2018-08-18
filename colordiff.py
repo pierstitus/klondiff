@@ -180,10 +180,12 @@ class DiffWriter(object):
 
         s = SequenceMatcher(None, oldtext[1:], newtext[1:])
         if max(m[2] for m in s.get_matching_blocks()) >= 5:#s.quick_ratio() > 0.6 and s.ratio() > 0.6:
-            matches = s.get_matching_blocks()
-            matches = [m for m in matches if m[2] == 0 or m[2] >= 3]
             oldtext = oldtext[1:]
             newtext = newtext[1:]
+            matches = s.get_matching_blocks()
+            # filter matches on minimum length 3 or at least one special character
+            matches = [m for m in matches if m[2] == 0 or m[2] >= 3
+                       or re.search('[^\w ]', oldtext[m[0]:m[0]+m[2]])]
             old = [self.colorstring('oldtext', '-', False)]
             new = [self.colorstring('newtext', '+', False)]
             old.append(olddel(oldtext[0:matches[0][0]]))
