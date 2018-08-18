@@ -9,6 +9,13 @@ The main focus is improving the readability of the diff output. The main changes
 - Blocks with changes are interleaved, making it easer to see line differences.
 - In colored diff output the unchanged parts of changed lines are displayed in gold.
 
+## Install
+
+Clone this repo somewhere, and make symlinks to klondiff and git-klondiff in your ~/bin.
+If you want to use a different directory on your path, change also the path in git-klondiff.
+
+Requires python and python-bzrlib to be installed.
+
 ## Usage
 
     klondiff file_a file_b
@@ -27,9 +34,11 @@ To use klondiff by default set your configuration (assuming ~/bin/klondiff is a 
 
     git config --global diff.external ~/bin/klondiff
 
-To use klondiff for creating patches use
+To use klondiff for `git show`, `git format-patch` and other `git log` friends use `--ext-diff`
 
-    git format-patch --ext-diff
+    git show --ext-diff
+
+For `git format-patch` you'd want to disable color, which is not implemented yet.
 
 ## Why Klondike?
 
