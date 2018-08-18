@@ -9,6 +9,10 @@ The main focus is improving the readability of the diff output. The main changes
 - Blocks with changes are interleaved, making it easer to see line differences.
 - In colored diff output the unchanged parts of changed lines are displayed in gold.
 
+## Example
+
+![example](https://github.com/pierstitus/klondiff/blob/master/example.png)
+
 ## Install
 
 Clone this repo somewhere, and make symlinks to klondiff and git-klondiff in your ~/bin.
