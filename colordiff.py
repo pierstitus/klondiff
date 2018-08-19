@@ -111,16 +111,16 @@ class DiffWriter(object):
 
             self.colors[key] = val
 
-    def colorstring(self, type, line, check_style=None):
+    def colorstring(self, type, line, bgcolor_if_space=False, bgcolor=None):
         color = self.colors[type]
         if color is not None:
-            if 'newtext' == type:
+            if 'newtext' == type and line.endswith('\n'):
                 bad_ws_match = re.match(r'^(.*?)([\t ]*)(\r?\n)$',
                                         line)
                 if bad_ws_match:
                     return ''.join(terminal.colorstring(txt, color, bcol)
                         for txt, bcol in (
-                            (bad_ws_match.group(1), None),
+                            (bad_ws_match.group(1), bgcolor),
                             (bad_ws_match.group(2), self.colors['trailingspace'])
                         )) + bad_ws_match.group(3)
             elif 'diffstuff' == type:
@@ -129,7 +129,11 @@ class DiffWriter(object):
                 if diffstuff_match:
                     return (terminal.colorstring(diffstuff_match.group(1), self.colors['diffstuff'])
                             + diffstuff_match.group(2))
-            return terminal.colorstring(str(line), color)
+            elif bgcolor_if_space and line.isspace() and not line.endswith('\n'):
+                bgcolor = color
+                if bgcolor.startswith('dark'):
+                    bgcolor = bgcolor[4:]
+            return terminal.colorstring(str(line), color, bgcolor)
         else:
             return str(line)
 
@@ -169,15 +173,6 @@ class DiffWriter(object):
         self.target.flush()
 
     def parse_changed_line(self, oldtext, newtext):
-        def oldsame(s):
-            return self.colorstring('oldsame', s, False)
-        def newsame(s):
-            return self.colorstring('newsame', s, False)
-        def olddel(s):
-            return self.colorstring('oldtext', s, 'check_white')
-        def newadd(s):
-            return self.colorstring('newtext', s, 'check_white')
-
         s = SequenceMatcher(None, oldtext[1:], newtext[1:])
         if max(m[2] for m in s.get_matching_blocks()) >= 5:#s.quick_ratio() > 0.6 and s.ratio() > 0.6:
             oldtext = oldtext[1:]
@@ -188,13 +183,13 @@ class DiffWriter(object):
                        or re.search('[^\w ]', oldtext[m[0]:m[0]+m[2]])]
             old = [self.colorstring('oldtext', '-', False)]
             new = [self.colorstring('newtext', '+', False)]
-            old.append(olddel(oldtext[0:matches[0][0]]))
-            new.append(newadd(newtext[0:matches[0][1]]))
+            old.append(self.colorstring('oldtext', oldtext[0:matches[0][0]], bgcolor_if_space=True))
+            new.append(self.colorstring('newtext', newtext[0:matches[0][1]], bgcolor_if_space=True))
             for n, m in enumerate(matches[:-1]):
-                old.append(oldsame(oldtext[m[0]:m[0]+m[2]]))
-                new.append(newsame(newtext[m[1]:m[1]+m[2]]))
-                old.append(olddel(oldtext[m[0]+m[2]:matches[n+1][0]]))
-                new.append(newadd(newtext[m[1]+m[2]:matches[n+1][1]]))
+                old.append(self.colorstring('oldsame', oldtext[m[0]:m[0]+m[2]]))
+                new.append(self.colorstring('newsame', newtext[m[1]:m[1]+m[2]]))
+                old.append(self.colorstring('oldtext', oldtext[m[0]+m[2]:matches[n+1][0]]))
+                new.append(self.colorstring('newtext', newtext[m[1]+m[2]:matches[n+1][1]]))
             output = [''.join(old), ''.join(new)]
         else:
             output = [self.colorstring('oldtext', oldtext),
