@@ -291,16 +291,24 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
                     cur_a = cur_b = 0
                     cur_an = cur_bn = 0
                     prev_an = prev_bn = 0
+                    prev_m2 = 0
                     matches = myersdiff.InlineMyersSequenceMatcher(None, a, b).get_matching_blocks()
                     for m in matches:
-                        if m[2] >= 5: # only act when matches of at least 5 chars found
-                            while cur_a <= m[0]:
+                        if m[2] >= 3: # only act when match is long enough
+                            # find line numbers of match
+                            while cur_a <= m[0] + 1:
                                 cur_a += len(self.a_ws[i+cur_an]) + 2
                                 cur_an += 1
-                            while cur_b <= m[1]:
+                                prev_m2 = 0
+                            while cur_b <= m[1] + 1:
                                 cur_b += len(self.b_ws[j+cur_bn]) + 2
                                 cur_bn += 1
+                                prev_m2 = 0
                             if prev_an < cur_an and prev_bn < cur_bn:
+                                # if too little overlap between lines skip match
+                                if m[2] + prev_m2 <= 0.6 * min(len(self.a_ws[i + cur_an - 1]), len(self.b[j + cur_bn - 1])):
+                                    prev_m2 += m[2]
+                                    continue
                                 if prev_an < cur_an - 1 or prev_bn < cur_bn - 1:
                                     answer.append( add_tag((
                                         i + prev_an, i + cur_an - 1,

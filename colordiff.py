@@ -174,12 +174,14 @@ class DiffWriter(object):
 
     def parse_changed_line(self, oldtext, newtext):
         s = SequenceMatcher(None, oldtext[1:], newtext[1:])
-        if max(m[2] for m in s.get_matching_blocks()) >= 5:#s.quick_ratio() > 0.6 and s.ratio() > 0.6:
+        # only color changes when enough matches found, related to how klondiff tests it
+        if sum(m[2] for m in s.get_matching_blocks()) > 0.6 * min(len(oldtext), len(newtext)): #s.quick_ratio() > 0.6 and s.ratio() > 0.6:
             oldtext = oldtext[1:]
             newtext = newtext[1:]
             matches = s.get_matching_blocks()
-            # filter matches on minimum length 3 or at least one special character
-            matches = [m for m in matches if m[2] == 0 or m[2] >= 3
+            # filter matches on minimum length or at least one special character
+            matches = [m for m in matches if m[2] == 0 or m[2] >= 4
+                       or oldtext[m[0]:m[0]+m[2]].isspace()
                        or re.search('[^\w ]', oldtext[m[0]:m[0]+m[2]])]
             old = [self.colorstring('oldtext', '-', False)]
             new = [self.colorstring('newtext', '+', False)]
