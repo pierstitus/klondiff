@@ -8,10 +8,17 @@ The main focus is improving the readability of the diff output. The main changes
 - Short lines are neglected, reducing wrong line matches, with for example only brackets.
 - Blocks with changes are interleaved, making it easer to see line differences.
 - In colored diff output the unchanged parts of changed lines are displayed in gold.
+- Changes in indentation have colored background.
 
 ## Example
 
 ![example](https://github.com/pierstitus/klondiff/blob/master/example.png)
+
+Comparison of commit c07c0923 of this repository:
+
+![comparison](https://github.com/pierstitus/klondiff/blob/master/comparison.png)
+
+As you can see the resulting diff is not necessarily smaller, though it is more true to the real changes.
 
 ## Install
 
