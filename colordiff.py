@@ -114,8 +114,8 @@ class DiffWriter(object):
     def colorstring(self, type, line, bgcolor_if_space=False, bgcolor=None):
         color = self.colors[type]
         if color is not None:
-            if 'newtext' == type and line.endswith('\n'):
-                bad_ws_match = re.match(r'^(.*?)([\t ]*)(\r?\n)$',
+            if ('newtext' == type or 'newsame' == type) and line.endswith('\n'):
+                bad_ws_match = re.match(r'^(.*?)([\t ]+)(\r?\n)$',
                                         line)
                 if bad_ws_match:
                     return ''.join(terminal.colorstring(txt, color, bcol)
@@ -179,12 +179,12 @@ class DiffWriter(object):
             oldtext = oldtext[1:]
             newtext = newtext[1:]
             matches = s.get_matching_blocks()
-            # filter matches on minimum length or at least one special character
+            # filter matches on minimum length or at least one special character,
+            # the last match alway has lenght 0 and must be included too
             matches = [m for m in matches if m[2] == 0 or m[2] >= 4
-                       or oldtext[m[0]:m[0]+m[2]].isspace()
-                       or re.search('[^\w ]', oldtext[m[0]:m[0]+m[2]])]
-            old = [self.colorstring('oldtext', '-', False)]
-            new = [self.colorstring('newtext', '+', False)]
+                       or re.search('[^\w \r\n]', oldtext[m[0]:m[0]+m[2]])]
+            old = [self.colorstring('oldtext', '-')]
+            new = [self.colorstring('newtext', '+')]
             old.append(self.colorstring('oldtext', oldtext[0:matches[0][0]], bgcolor_if_space=True))
             new.append(self.colorstring('newtext', newtext[0:matches[0][1]], bgcolor_if_space=True))
             for n, m in enumerate(matches[:-1]):
