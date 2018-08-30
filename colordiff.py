@@ -131,8 +131,6 @@ class DiffWriter(object):
                             + diffstuff_match.group(2))
             elif bgcolor_if_space and line.isspace() and not line.endswith('\n'):
                 bgcolor = color
-                if bgcolor.startswith('dark'):
-                    bgcolor = bgcolor[4:]
             return terminal.colorstring(str(line), color, bgcolor)
         else:
             return str(line)

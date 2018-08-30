@@ -70,7 +70,11 @@ def colorstring(text, fgcolor=None, bgcolor=None):
         code.append('3' + colors[fgcolor])
 
     if bgcolor:
-        code.append('4' + colors[bgcolor])
+        if bgcolor.startswith('dark'):
+            bgcolor = bgcolor[4:]
+            code.append('4' + colors[bgcolor])
+        else:
+            code.append('10' + colors[bgcolor])
 
     return "".join(("\033[", ';'.join(code), "m", text, "\033[0m"))
 
