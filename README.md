@@ -10,6 +10,8 @@ The main focus is improving the readability of the diff output. The main changes
 - In colored diff output the unchanged parts of changed lines are displayed in gold.
 - Changes in indentation have colored background.
 
+**Warning: this software is not well tested yet, use at you own risk!**
+
 ## Example
 
 ![example](https://github.com/pierstitus/klondiff/blob/master/example.png)
