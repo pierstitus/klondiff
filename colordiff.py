@@ -127,7 +127,7 @@ class DiffWriter(object):
                 diffstuff_match = re.match(r'^(@@[^@]*@@)(.*\r?\n)$',
                                         line)
                 if diffstuff_match:
-                    return (terminal.colorstring(diffstuff_match.group(1), self.colors['diffstuff'])
+                    return (terminal.colorstring(diffstuff_match.group(1), color)
                             + diffstuff_match.group(2))
             elif bgcolor_if_space and line.isspace() and not line.endswith('\n'):
                 bgcolor = color
@@ -170,6 +170,9 @@ class DiffWriter(object):
             self.target.writelines(line)
 
     def flush(self):
+        if None != self.oldtext_hold:
+            self.target.writelines(self.colorstring('oldtext', self.oldtext_hold))
+            self.oldtext_hold = None
         self.target.flush()
 
     def parse_changed_line(self, oldtext, newtext):

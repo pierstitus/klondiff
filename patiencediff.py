@@ -15,19 +15,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-from __future__ import absolute_import
-
 import sys
 PY3 = sys.version_info[0] == 3
 
-from bzrlib.lazy_import import lazy_import
-lazy_import(globals(), """
 import os
 import sys
 import time
 import difflib
-""")
-
 import re
 
 __all__ = ['PatienceSequenceMatcher', 'unified_diff', 'unified_diff_files']
@@ -168,7 +162,7 @@ def unified_diff(a, b, fromfile='', tofile='', fromfiledate='',
             while current_function < len(function_lines) and function_lines[current_function] < first[1] + n:
                 current_function += 1
             if current_function > 0:
-                function = ' ' + a[function_lines[current_function - 1]]
+                function = ' ' + a[function_lines[current_function - 1]].rstrip()
             else:
                 function = ''
         else:
@@ -309,6 +303,8 @@ def main(args):
         else:
             # line including warning is seen as one line, even though it's printed on two lines
             colordiff_writer.writeline(line + '\n\\ No newline at end of file\n')
+    # colordiff_writer keeps changed lines in buffer to compare, flush them when done
+    colordiff_writer.flush()
 
 
 if __name__ == '__main__':
