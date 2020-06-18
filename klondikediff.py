@@ -41,7 +41,7 @@ def unique_lcs_py(a, b):
     # set index[line in a] = position of line in a unless
     # a is a duplicate, in which case it's set to None
     index = {}
-    for i in xrange(len(a)):
+    for i in range(len(a)):
         line = a[i]
         if line in index:
             index[line] = None
@@ -221,7 +221,7 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
                     if a_ws[matches[n+1][0] + d - k - 1] == '':
                         matches[n] = (matches[n][0], matches[n][1], matches[n][2] - k)
                         d -= k
-                        break;
+                        break
                 matches[n+1] = (matches[n+1][0] + d, matches[n+1][1] + d, matches[n+1][2] - d)
 
         self.matching_blocks = matches
@@ -360,9 +360,9 @@ class KlondikeSequenceMatcher(difflib.SequenceMatcher):
             errors.append("{} should end on {}".format((t, i1, i2, j1, j2), (len(self.a), len(self.b))))
         if errors:
             for a in answer:
-                print a
-            errors.append("Error in algorithm, please report")
-            print '\n'.join(errors)
+                print(a)
+            errors.append("Error in algorithm, please report on https://github.com/pierstitus/klondiff/issues")
+            print('\n'.join(errors))
             #raise Exception('\n'.join(errors))
 
         return answer

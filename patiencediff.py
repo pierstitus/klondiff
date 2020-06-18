@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (C) 2005, 2006, 2007 Canonical Ltd
 #
 # This program is free software; you can redistribute it and/or modify
@@ -60,8 +60,8 @@ def istext(block):
     return float(len(nontext)) / len(block) <= 0.30
 
 def binary_test(file1, file2, blocksize=512):
-    with open(file1) as f1:
-        with open(file2) as f2:
+    with open(file1, 'rb') as f1:
+        with open(file2, 'rb') as f2:
             block1 = f1.read(blocksize)
             block2 = f2.read(blocksize)
 
@@ -200,14 +200,14 @@ def unified_diff_files(a, b, sequencematcher=None, displaynames=None):
         file_a = sys.stdin
         time_a = time.time()
     else:
-        file_a = open(a, 'rb')
+        file_a = open(a, 'r')
         time_a = os.stat(a).st_mtime
 
     if b == '-':
         file_b = sys.stdin
         time_b = time.time()
     else:
-        file_b = open(b, 'rb')
+        file_b = open(b, 'r')
         time_b = os.stat(b).st_mtime
 
     # TODO: Include fromfiledate and tofiledate if displaynames is not set
@@ -215,15 +215,14 @@ def unified_diff_files(a, b, sequencematcher=None, displaynames=None):
                         fromfile=aname, tofile=bname,
                         sequencematcher=sequencematcher)
 
-
 try:
-    from bzrlib._patiencediff_c import (
+    from breezy._patiencediff_c import (
         unique_lcs_c as unique_lcs,
         recurse_matches_c as recurse_matches,
         PatienceSequenceMatcher_c as PatienceSequenceMatcher
         )
 except ImportError:
-    from bzrlib._patiencediff_py import (
+    from breezy._patiencediff_py import (
         unique_lcs_py as unique_lcs,
         recurse_matches_py as recurse_matches,
         PatienceSequenceMatcher_py as PatienceSequenceMatcher

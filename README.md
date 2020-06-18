@@ -27,7 +27,9 @@ As you can see the resulting diff is not necessarily smaller, though it is more 
 Clone this repo somewhere, and make symlinks to klondiff and git-klondiff in your ~/bin.
 If you want to use a different directory on your path, change also the path in git-klondiff.
 
-Requires python and python-bzrlib to be installed.
+Requires python3 and python3-breezy to be installed.
+
+To run with python2 change python3 to python on the first line of patiencediff.py.
 
 ## Usage
 
