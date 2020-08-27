@@ -215,18 +215,11 @@ def unified_diff_files(a, b, sequencematcher=None, displaynames=None):
                         fromfile=aname, tofile=bname,
                         sequencematcher=sequencematcher)
 
-try:
-    from breezy._patiencediff_c import (
-        unique_lcs_c as unique_lcs,
-        recurse_matches_c as recurse_matches,
-        PatienceSequenceMatcher_c as PatienceSequenceMatcher
-        )
-except ImportError:
-    from breezy._patiencediff_py import (
-        unique_lcs_py as unique_lcs,
-        recurse_matches_py as recurse_matches,
-        PatienceSequenceMatcher_py as PatienceSequenceMatcher
-        )
+from patiencediff import (
+    unique_lcs,
+    recurse_matches,
+    PatienceSequenceMatcher
+    )
 
 from klondikediff import KlondikeSequenceMatcher
 
