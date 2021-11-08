@@ -22,14 +22,20 @@ Comparison of commit c07c0923 of this repository:
 
 As you can see the resulting diff is not necessarily smaller, though it is more true to the real changes.
 
-## Install
+## Install (on Linux and the like)
 
-Clone this repo somewhere, and make symlinks to klondiff and git-klondiff in your ~/bin.
-If you want to use a different directory on your path, change also the path in git-klondiff.
+Clone this repo somewhere on your computer, and make symlinks to klondiff and
+git-klondiff in e.g. `~/bin` or `~/.local/bin` — some directory in your `$PATH`
+(run `echo $PATH` to see where your shell looks up your commands). For example:
 
-Requires python3 and python3-breezy to be installed.
+    ln -s ~/myclones/klondiff/klondiff ~/bin/klondiff
+    ln -s ~/myclones/klondiff/git-klondiff ~/bin/git-klondiff
 
-To run with python2 change python3 to python on the first line of patiencediff.py.
+Klondiff requires python3 and patiencediff; to install the latter use e.g. pip
+(`pip3 install patiencediff`) or apt-get the `python3-patiencediff` package on
+debian/ubuntu/etc.
+
+To run with python2 change python3 to python on the first line of klonpatiencediff.py.
 
 ## Usage
 
@@ -41,11 +47,11 @@ Use with pager:
 
 Use with git:
 
-For incidental use make a symlink to `git-klondiff` somewhere in your path, e.g. ~/bin/, then you can use
+For incidental use, make a symlink to `git-klondiff` as described above, then you can use
 
     git klondiff
 
-To use klondiff by default set your configuration (assuming ~/bin/klondiff is a symlink to patiencediff.py)
+To use klondiff by default set your configuration (assuming `~/bin/klondiff` is your symlink to `klondiff`)
 
     git config --global diff.external ~/bin/klondiff
 
@@ -55,7 +61,7 @@ To use klondiff for `git show`, `git format-patch` and other `git log` friends u
 
 For `git format-patch` you'd want to disable color, which is not implemented yet.
 
-## Why Klondike?
+## Why the name Klondike?
 
 [Klondike](https://en.wikipedia.org/wiki/Klondike_(solitaire)) is a version of Patience, and brings the gold to the surface in diffs with many junk changes.
 
