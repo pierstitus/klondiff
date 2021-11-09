@@ -61,8 +61,8 @@ To use klondiff for `git show`, `git format-patch` and other `git log` friends u
 
 For `git format-patch` you'd want to disable color, which is not implemented yet.
 
-## Why the name Klondike?
+## Why the name Klondike diff?
 
-[Klondike](https://en.wikipedia.org/wiki/Klondike_(solitaire)) is a version of Patience, and brings the gold to the surface in diffs with many junk changes.
+[Klondike](https://en.wikipedia.org/wiki/Klondike_(solitaire)) is a version of the game Patience, after which the Patience diff algorithm is named. Klondike diff brings the gold to the surface in diffs with many junk changes.
 
 Piers Titus van der Torren
